@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.Events;
+using System;
 
 [RequireComponent(typeof(PlayerAnimation))]
 public class PlayerState : MonoBehaviour
@@ -13,39 +13,32 @@ public class PlayerState : MonoBehaviour
     public bool IsAttacking;
     public bool IsHit;
 
-    public UnityEvent OnDie;
-    public UnityEvent OnHitStart;
-    public UnityEvent OnHitEnd;
-    public UnityEvent OnAttackStart;
-    public UnityEvent OnAttackEnd;
-    public UnityEvent OnDizzyStart;
-    public UnityEvent OnDizzyEnd;
-    public UnityEvent<int> OnHPChanged;
+    public event Action OnDie;
+    public event Action OnHitStart;
+    public event Action OnHitEnd;
+    public event Action OnAttackStart;
+    public event Action OnAttackEnd;
+    public event Action OnDizzyStart;
+    public event Action OnDizzyEnd;
+    public event Action<int> OnHPChanged;
 
     private void Start()
     {
         currentHP = maxHP;
-        OnHPChanged.AddListener(HpChange);
-        OnHitEnd.AddListener(() => IsHit = false);
-        OnDizzyEnd.AddListener(() => IsDizzy = false);
-        OnAttackEnd.AddListener(() => IsAttacking = false);
+
+        // delegate 연결
+        OnHPChanged += HpChange;
+        OnHitEnd += () => IsHit = false;
+        OnDizzyEnd += () => IsDizzy = false;
+        OnAttackEnd += () => IsAttacking = false;
     }
 
     private void Update()
     {
 #if UNITY_EDITOR
-        if(Input.GetKeyDown(KeyCode.Alpha0))
-        {
-            TakeDamage(10);
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            Heal(10);
-        }
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            SetDizzy(true);
-        }
+        if (Input.GetKeyDown(KeyCode.Alpha0)) TakeDamage(10);
+        if (Input.GetKeyDown(KeyCode.Alpha1)) Heal(10);
+        if (Input.GetKeyDown(KeyCode.Alpha2)) SetDizzy(true);
 #endif
     }
 
@@ -71,6 +64,7 @@ public class PlayerState : MonoBehaviour
             OnHitStart?.Invoke();
             OnHPChanged?.Invoke(currentHP);
             IsHit = true;
+
             if (currentHP <= 0) Die();
         }
         else
@@ -110,7 +104,10 @@ public class PlayerState : MonoBehaviour
         Debug.Log($"HP Changed: {hp}");
     }
 
-    // 이동중에 다른 애니메이션이 가능할수 있도록 애니메이션을 마스크 레이어로 구성.
     public bool CanMove() => !IsDead && !IsDizzy;
     public bool CanAttack() => !IsDead && !IsDizzy && !IsAttacking;
+
+    public void InvokeAttackEnd() => OnAttackEnd?.Invoke();
+    public void InvokeHitEnd() => OnHitEnd?.Invoke();
+    public void InvokeDizzyEnd() => OnDizzyEnd?.Invoke();
 }

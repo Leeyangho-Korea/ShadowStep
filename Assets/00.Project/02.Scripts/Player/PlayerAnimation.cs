@@ -1,6 +1,6 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 
 [RequireComponent(typeof(PlayerState))]
 public class PlayerAnimation : MonoBehaviour
@@ -9,28 +9,21 @@ public class PlayerAnimation : MonoBehaviour
     private PlayerState playerState;
     private float[] layerTemp;
     private Dictionary<string, float> animationClipLengths = new();
+
     void Awake()
     {
         animator = GetComponentInChildren<Animator>();
         playerState = GetComponent<PlayerState>();
         layerTemp = new float[3];
-
-        // 모든 클립 캐싱
-      //  foreach (var clip in animator.runtimeAnimatorController.animationClips)
-      //  {
-      //      if (!animationClipLengths.ContainsKey(clip.name))
-      //          animationClipLengths.Add(clip.name, clip.length);
-      //  }
     }
-
 
     void Start()
     {
-        // 상태 이벤트 연결
-        playerState.OnDie.AddListener(PlayDie);
-        playerState.OnAttackStart.AddListener(SetAttackLayer);
-        playerState.OnHitStart.AddListener(SetHitLayer);
-        playerState.OnDizzyStart.AddListener(SetDizzyLayer);
+        // delegate 기반 상태 이벤트 연결
+        playerState.OnDie += PlayDie;
+        playerState.OnAttackStart += SetAttackLayer;
+        playerState.OnHitStart += SetHitLayer;
+        playerState.OnDizzyStart += SetDizzyLayer;
     }
 
     private void Update()
@@ -42,19 +35,19 @@ public class PlayerAnimation : MonoBehaviour
                 layerTemp[i - 1] -= Time.deltaTime;
                 animator.SetLayerWeight(i, layerTemp[i - 1]);
 
-                if (layerTemp[i-1] <=0f)
+                if (layerTemp[i - 1] <= 0f)
                 {
                     animator.SetLayerWeight(i, 0f);
                     switch (i)
                     {
                         case 1:
-                            playerState.OnAttackEnd?.Invoke();
+                            playerState.InvokeAttackEnd();
                             break;
                         case 2:
-                            playerState.OnHitEnd?.Invoke();
+                            playerState.InvokeHitEnd();
                             break;
                         case 3:
-                            playerState.OnDizzyEnd?.Invoke();
+                            playerState.InvokeDizzyEnd();
                             break;
                     }
                 }
