@@ -12,22 +12,41 @@ public class EnemyAnimation : MonoBehaviour
 
     public void PlayIdle()
     {
+        if(animator.GetCurrentAnimatorStateInfo(0).IsName("IDLE"))
+        return;
+        animator.ResetTrigger("Idle");
         animator.SetTrigger("Idle");
     }
 
     public void PlayChase()
     {
+        if(animator.GetCurrentAnimatorStateInfo(0).IsName("CHASE"))
+        return;
+        animator.ResetTrigger("Chase");
         animator.SetTrigger("Chase");
     }
 
     public void PlayAttack()
     {
-        animator.SetTrigger("Attack");
+      //  if(animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+      //  return;
+       // animator.ResetTrigger("Attack");
+       // animator.SetTrigger("Attack");
+        animator.Play("ATTACK", 0, 0f);
     }
 
     public void PlayHit()
     {
-        animator.SetTrigger("GetHit");
+        //if(animator.GetCurrentAnimatorStateInfo(0).IsName("GetHit"))
+        //return;
+        //animator.ResetTrigger("GetHit");
+        //animator.SetTrigger("GetHit");
+        animator.Play("GETHIT", 0, 0f);
+    }
+
+    public void PlayWalk()
+    {
+        animator.SetTrigger("Walk");
     }
 
     public void PlayDeath()

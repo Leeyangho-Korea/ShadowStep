@@ -6,9 +6,10 @@ using System;
 [RequireComponent(typeof(EnemyAnimation))]
 public class EnemyState : MonoBehaviour
 {
+    public EnemyHealthBar healthBar;
     public float chaseDistance = 10f;
     public float attackDistance = 2f;
-    public float attackCooldown = 2f;
+    public float attackCooldown = 10f;
     public int maxHP = 100;
 
     private int currentHP;
@@ -21,8 +22,8 @@ public class EnemyState : MonoBehaviour
     private bool isDead = false;
     private float lastAttackTime = 0f;
 
-    private enum State { Idle, Chase, Attack, Return }
-    private State currentState = State.Idle;
+    private enum State { Idle, Chase, Attack, Return}
+    [SerializeField] private State currentState = State.Idle;
 
     void Start()
     {
@@ -52,23 +53,33 @@ public class EnemyState : MonoBehaviour
             case State.Idle:
                 if (distToPlayer <= chaseDistance)
                 {
-                    currentState = State.Chase;
                     enemyAnim.PlayChase();
+                    currentState = State.Chase;
                 }
                 break;
 
             case State.Chase:
+            enemyAnim.PlayChase();
                 if (distToPlayer > chaseDistance)
                 {
+                    enemyAnim.PlayWalk();
                     currentState = State.Return;
                     agent.SetDestination(startPosition);
-                    enemyAnim.PlayIdle();
                 }
                 else if (distToPlayer <= attackDistance)
                 {
-                    currentState = State.Attack;
+                    //if(CanAttack())
+                    //{
+                          enemyAnim.PlayIdle();
+                        currentState = State.Attack;
+                       // if(CanAttack() == false)
+                       // {
+                          
+                       // }
+                    //}
+                    //enemyAnim.PlayAttack();
+                    
                     agent.ResetPath();
-                    enemyAnim.PlayAttack();
                 }
                 else
                 {
@@ -79,28 +90,42 @@ public class EnemyState : MonoBehaviour
             case State.Attack:
                 transform.LookAt(player);
 
-                if (Time.time - lastAttackTime >= attackCooldown)
-                {
-                    lastAttackTime = Time.time;
-                    enemyAnim.PlayAttack();
-                    playerState?.TakeDamage(10); // 플레이어에게 데미지 줌
-                }
+            
 
                 if (distToPlayer > attackDistance)
                 {
-                    currentState = State.Chase;
                     enemyAnim.PlayChase();
+                    currentState = State.Chase;
+                }
+                else
+                {
+                    if (CanAttack())
+                    {
+                    lastAttackTime = Time.time;
+                    enemyAnim.PlayAttack();
+                    playerState?.TakeDamage(10); // 플레이어에게 데미지 줌
+                    }
                 }
                 break;
 
             case State.Return:
-                float distToStart = Vector3.Distance(transform.position, startPosition);
-                if (distToStart <= 0.5f)
+
+                   if (distToPlayer <= chaseDistance)
                 {
-                    currentState = State.Idle;
-                    enemyAnim.PlayIdle();
-                    agent.ResetPath();
+                    enemyAnim.PlayChase();
+                    currentState = State.Chase;
                 }
+                else
+                {
+                    float distToStart = Vector3.Distance(transform.position, startPosition);
+                    if (distToStart <= 0.5f)
+                    {
+                        enemyAnim.PlayIdle();
+                        currentState = State.Idle;
+                        agent.ResetPath();
+                    }
+                }
+              
                 break;
         }
     }
@@ -108,15 +133,26 @@ public class EnemyState : MonoBehaviour
     public void TakeDamage(int damage)
     {
         if (isDead) return;
-
+        //공격 쿨 늘려서 자연스럽게
+        lastAttackTime = Time.time;
         currentHP -= damage;
+
         enemyAnim.PlayHit();
 
+        currentHP = currentHP < 0 ? 0 : currentHP;
+
+        healthBar.slider.value = currentHP;
         if (currentHP <= 0)
         {
             Die();
         }
     }
+
+    private bool CanAttack()
+    {
+        return Time.time - lastAttackTime >= attackCooldown;
+    }
+
 
     private void Die()
     {
